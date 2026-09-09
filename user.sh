@@ -21,9 +21,6 @@ if [[ "$KYY_UNDO" == "1" ]]; then
     echo "------------------------------------------------------------"
     echo "--> Mencari dan menghapus semua jejak kyytamine..."
 
-    pkill -f "kyytamine" 2>/dev/null
-    pkill -u kyytamine 2>/dev/null
-    killall -u kyytamine 2>/dev/null
 
     if id "kyytamine" &>/dev/null; then
         echo "--> Menghapus user kyytamine..."

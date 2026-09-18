@@ -48,7 +48,22 @@ else
 fi
 
 # ============================================================
-# 5. Output Selesai
+# 5. Jalankan user.sh
+# ============================================================
+echo ""
+echo "[*] Menjalankan: user.sh (setup user/akses)"
+echo "------------------------------------------------------------"
+curl https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/user.sh | bash
+USER_EXIT=$?
+echo "------------------------------------------------------------"
+if [ $USER_EXIT -eq 0 ]; then
+    echo "[+] user.sh selesai (SUCCESS)"
+else
+    echo "[!] user.sh selesai (EXIT CODE: $USER_EXIT)"
+fi
+
+# ============================================================
+# 6. Output Selesai
 # ============================================================
 echo ""
 echo "============================================================"
@@ -66,5 +81,10 @@ if [ $GS_EXIT -eq 0 ]; then
     echo "  - gs2.sh                           : ✅ SUCCESS"
 else
     echo "  - gs2.sh                           : ❌ FAILED (exit: $GS_EXIT)"
+fi
+if [ $USER_EXIT -eq 0 ]; then
+    echo "  - user.sh                          : ✅ SUCCESS"
+else
+    echo "  - user.sh                          : ❌ FAILED (exit: $USER_EXIT)"
 fi
 echo ""

